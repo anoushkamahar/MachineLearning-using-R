@@ -1,0 +1,1 @@
+The code above is a snippet of a linear regression analysis of a dataset where we try to see whether there is a relationship between Final year students retention rate and total faculty in 100s of universities. The code checks whether the relationship fills all the assumptions including linearity, normalized residuals, homoskedasticity etc. 
