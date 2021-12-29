@@ -1,0 +1,70 @@
+library(mlbench)
+data("Vowel")
+summary(Vowel)
+library(caret)
+library(dplyr)
+library(tidyverse)
+library(MASS)
+
+
+##Goal is to classify Class by including at all other variables in the Vowel dataset.
+
+set.seed(1234)
+divideData <- createDataPartition(Vowel$Class,p=.75,list=F)
+train <- Vowel[divideData,]
+test <- Vowel[-divideData,]
+set.seed(1234)
+preprocessing <- train %>% preProcess(method=c("center","scale"))
+traintransformed <- preprocessing %>% predict(train)
+testtransformed <- preprocessing %>% predict(test)
+
+
+
+##Model 1: LDA
+ldamodel <- lda(Class~., data=traintransformed)
+ldapredictions <- ldamodel %>% predict(testtransformed)
+ldaaccuracy <- mean(ldapredictions$class==testtransformed$Class)##accuracy rate
+confusionMatrix(ldapredictions$class,testtransformed$Class)
+(ldaaccuracy)
+#0.5454545
+
+
+###Model 2: QDA
+set.seed(1234)
+qdamodel <- qda(Class~., data=traintransformed)
+qdapredictions <- qdamodel %>% predict(testtransformed)
+qdaaccuracy <- mean(qdapredictions$class==testtransformed$Class)##accuracy rate
+confusionMatrix(qdapredictions$class,testtransformed$Class)
+(qdaaccuracy)
+#0.9628099
+
+
+
+###Model 3: KNN
+set.seed(999)
+knnmodel<- train(Class~., data=train, method="knn", preProcess=c("center","scale"))
+knnpredictions <- predict(knnmodel, newdata=test)
+knnaccuracy <- mean(knnpredictions==test$Class)
+(knnaccuracy)
+#0.8719008
+confusionMatrix(knnpredictions,test$Class)
+bestTune <- knnmodel$bestTune
+(bestTune)
+ 
+
+knnmodel <- train(Class~., method = "knn", data=train, preProcess=c("center","scale"), tuneLength=5)
+knnaccuracy <- mean(knnpredictions==test$Class)
+(knnaccuracy)
+#0.8719008
+
+####################################################################################################################
+#qda gave the best accuracy rate which was 0.9628099. 
+
+###Model 4: K-Fold using most accurate model (qda)
+set.seed(1234)
+trainControl <- trainControl(method = "cv", number=10)
+set.seed(1234)
+cvqdamodel <- train(Class~., method = "qda", data=train, trControl = trainControl)
+cvqdapredict <- predict(cvqdamodel, newdata = test)
+(mean(cvqdapredict == test$Class))
+#0.9628099
