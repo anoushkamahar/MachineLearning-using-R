@@ -1,0 +1,111 @@
+library(ISLR)
+data("Credit")
+
+
+str(Credit)
+#The dataset is a dataframe with 400 observation and 12 variables with different
+#types such as integers, numbers and factors
+summary(Credit)
+#The variables covered are ID, Income, Limit, Rating, Cards, Age, Education,
+#Gender, Student, Married status and Balance where Ethnicity only has three 
+#factors (African American, Asian and Caucasian)
+
+
+Credit <- Credit[,-c(1,8,9,10,11)]
+
+
+lmBalance <- lm(Balance~.,data=Credit)
+summary(lmBalance)
+#Insignificant p-values- Cards, Age, Education
+#variables= Income, Limit, Rating, Cards, Age, Education
+
+lmBalancestep <- step(lmBalance, direction="both")
+summary(lmBalancestep)
+#Forward step did not remove any variables
+#Backward step removed Education
+#Both step removed Education too
+
+#Hence Education will be removed as its p-value was very high and 2 of the 
+#steps removed that variable
+#It is risky to eliminate any more variables as removing them without further
+#calculations can omit potentially valuable information
+
+lmBalance2 <- lm(Balance~.-Education,data=Credit)
+summary(lmBalance2)
+
+#Insignificant p-values- Cards, Age
+lmBalancestep2 <- step(lmBalance2, direction="both")
+summary(lmBalancestep2)
+#Forward did not remove any variables
+#Backward did not remove any variables
+#Both did not remove variables
+
+
+#lmBalance3 <- lm(Balance~.-Education-Cards,data=Credit)
+#summary(lmBalance3)
+
+#lmBalancestep3 <- step(lmBalance2, direction="both")
+#Removed Card and the adjusted R square still did not change
+#That means we keep going
+
+#lmBalancestep4 <- lm(Balance~.-Education-Cards,data=Credit)
+#summary(lmBalancestep4)
+
+#We remove Age too because it is still insignificant
+#lmBalance4 <- lm(Balance~.-Education-Cards-Age,data=Credit)
+#R square value still did not change so we eliminate it, but it decreased
+#a lot when I removed income or limit, so the final equation is
+#lmBalance4 <- lm(Balance~.-Education-Cards-Age,data=Credit)
+#OR -445.10477 -7.61268*Income + 0.08183*Limit
+
+
+
+car::vif(lmBalance)
+#Looking at the answers of vif function that looks at multicollinearity, 
+#we are removing Rating as its ratings are too high (more than 200)
+
+lmBalance21 <- lm(Balance~.-Rating, data=Credit)
+car::vif(lmBalance21)
+#After removing ratings, all vif ratings were normal
+
+
+##Provide your final regression equation: 
+#Equation: -445.10477 -7.61268*Income + 0.08183*Limit
+
+plot(lmBalance)
+mean(lmBalance$residuals)
+#3.233798e-15 (very close to 0)
+hist(lmBalance$residuals)
+#A little right skewed but the mean is still 0 and most of the data revolves
+#around 0 with a few outlier reaching to the 3rd sd. 
+summary(lmBalance)
+
+
+#It seems that income and limit are variables that determine
+#a person's balance with Income having an inverse relationship. Although Age is
+#also one of the factors, its p-value is more than 0.05 but it is still 
+#in the model as it did not interact that much with other variables and is also 
+#the variable that has an inverse relationship (negative slope)
+
+###Prediction
+Credit2 <- Credit[,-c(1,8,9,10,11)]
+
+
+n <- length(Credit2$Balance)
+#dependent variable as length
+n1 <- 300
+set.seed(1000)
+trainobsnum <- sample(1:n,n1 )
+train <- Credit2[trainobsnum,]
+test <- Credit2[-trainobsnum,]
+
+
+lmtrain <- lm(Balance~., data=train)
+summary(lmtrain)
+
+predictions <- predict(lmtrain, newdata=test)
+mltools::mse(predictions, test$Balance)
+
+
+cor(test$Balance, predictions)
+#0.8888209
